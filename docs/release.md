@@ -15,7 +15,7 @@ conventional commit -> push to main
   -> next push: tag vX.Y.Z + GitHub Release created, binaries built & uploaded
 ```
 
-- Versions are read from each crate's `Cargo.toml` (`release-type: rust`) — all crates in the workspace share one version and are released together. Crate manifests use explicit `version = "x.y.z"` (not `version.workspace = true`), which release-please cannot parse.
+- Versions are read from each crate's `Cargo.toml` (`release-type: rust`) — all crates in the workspace share one version and are released together. The workspace root carries a small umbrella package (`agbr-workspace`, in the root `Cargo.toml`) so release-please can parse the root manifest; crate manifests use explicit `version = "x.y.z"` (not `version.workspace = true`), which release-please cannot parse.
 - No manual tagging required — release-please creates the tag and release.
 - **Requires a `GH_TOKEN` repository secret** (a personal access token with `repo` scope). The default `GITHUB_TOKEN` cannot push branches/tags or re-trigger workflows, so the release PR auto-merge and tag creation would fail without it.
 
