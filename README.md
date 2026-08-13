@@ -27,6 +27,48 @@ intent (plain language)
 
 Detailed walkthrough: [docs/architecture.md](docs/architecture.md).
 
+## Installation
+
+Prebuilt binaries are attached to every [GitHub Release](https://github.com/hvlcrs/agbr/releases) — no Rust toolchain required.
+
+```bash
+# macOS (Apple Silicon)
+curl -L -o agbr https://github.com/hvlcrs/agbr/releases/latest/download/agbr-aarch64-apple-darwin
+chmod +x agbr && sudo mv agbr /usr/local/bin/
+
+# Linux (x86_64)
+curl -L -o agbr https://github.com/hvlcrs/agbr/releases/latest/download/agbr-x86_64-unknown-linux-gnu
+chmod +x agbr && sudo mv agbr /usr/local/bin/
+
+# Windows (x86_64) — PowerShell
+Invoke-WebRequest https://github.com/hvlcrs/agbr/releases/latest/download/agbr-x86_64-pc-windows-msvc.exe -OutFile agbr.exe
+```
+
+Then install the render backend and verify:
+
+```bash
+brew install --cask rawtherapee      # macOS; see docs/config.md for Linux/Windows
+agbr capabilities
+```
+
+Building from source instead? `cargo build --release` produces `target/release/agbr` (Rust 1.96+, see [docs/release.md](docs/release.md)).
+
+## Commands
+
+`agbr help` lists everything; full output of every command is in [docs/commands.md](docs/commands.md).
+
+| Command | What it does |
+|---|---|
+| `agbr inspect <photo>` | Read EXIF -> image context |
+| `agbr recipe create <photo> --prompt "..."` | LLM generates a validated recipe |
+| `agbr recipe validate <recipe>` | Validate a recipe file |
+| `agbr plan --recipe <recipe>` | Check the recipe against backend capabilities |
+| `agbr preview <photo> --recipe <recipe>` | Downscaled preview |
+| `agbr apply <photo> --recipe <recipe>` | Full-resolution render |
+| `agbr export <photo> --format jpg\|tif\|png` | Export with explicit format/quality |
+| `agbr mcp serve` | MCP server over stdio (for agents) |
+| `agbr capabilities` / `agbr config` | Backend capabilities / resolved config |
+
 ## Quick start
 
 ```bash
@@ -52,7 +94,8 @@ Output lands in `~/agbr/exports/`. No LLM key? Use `--mock` for offline recipe g
 
 | Topic | File |
 |---|---|
-| CLI reference and workflows | [docs/cli.md](docs/cli.md) |
+| Command reference (full `--help` output) | [docs/commands.md](docs/commands.md) |
+| CLI workflows | [docs/cli.md](docs/cli.md) |
 | MCP server for agents | [docs/mcp.md](docs/mcp.md) |
 | Configuration reference | [docs/config.md](docs/config.md) |
 | Recipe format and schema | [docs/recipe.md](docs/recipe.md) |
