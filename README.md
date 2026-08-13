@@ -1,6 +1,7 @@
 # agbr
 
 [![CI](https://github.com/hvlcrs/agbr/actions/workflows/ci.yml/badge.svg)](https://github.com/hvlcrs/agbr/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/hvlcrs/agbr)](https://github.com/hvlcrs/agbr/releases)
 
 Terminal-native AI RAW processing engine. Describe the look in plain language; `agbr` turns it into a validated recipe and renders it non-destructively with RawTherapee.
 
