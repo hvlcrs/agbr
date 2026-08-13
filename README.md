@@ -1,5 +1,7 @@
 # agbr
 
+[![CI](https://github.com/hvlcrs/agbr/actions/workflows/ci.yml/badge.svg)](https://github.com/hvlcrs/agbr/actions/workflows/ci.yml)
+
 Terminal-native AI RAW processing engine. Describe the look in plain language; `agbr` turns it into a validated recipe and renders it non-destructively with RawTherapee.
 
 > **The LLM controls editing intent. RawTherapee controls image processing.**
@@ -54,6 +56,7 @@ Output lands in `~/agbr/exports/`. No LLM key? Use `--mock` for offline recipe g
 | Configuration reference | [docs/config.md](docs/config.md) |
 | Recipe format and schema | [docs/recipe.md](docs/recipe.md) |
 | Architecture and application logic | [docs/architecture.md](docs/architecture.md) |
+| Releasing and CI/CD | [docs/release.md](docs/release.md) |
 
 For agent-facing repo guidance (crate map, conventions, commands), see [AGENTS.md](AGENTS.md).
 
