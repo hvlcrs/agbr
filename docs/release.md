@@ -16,9 +16,11 @@ conventional commit -> push to main
   -> release workflow builds binaries and uploads them as assets
 ```
 
-- Version is read from `Cargo.toml` (`release-type: rust`) and bumped by release-please semantics (`feat:` -> minor, `fix:` -> patch, breaking -> major).
+- Versions are read from each crate's `Cargo.toml` (`release-type: rust`) — all crates in the workspace share one version and are released together — and bumped by release-please semantics (`feat:` -> minor, `fix:` -> patch, breaking -> major).
 - No manual tagging required — release-please creates the tag and release.
 - The binary build is triggered by the tag push and **uploads to the release that release-please already created** (with a bare fallback if the release doesn't exist yet).
+
+> Note: crate manifests use explicit `version = "x.y.z"` (not `version.workspace = true`), because release-please cannot parse workspace-inherited versions. `Cargo.lock` syncs automatically on the next build.
 
 ## Cut a release
 
