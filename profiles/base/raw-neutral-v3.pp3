@@ -1,0 +1,13 @@
+# agbr base reference profile — raw-neutral-v3
+#
+# Version-controlled technical baseline (design section 10.3). Deliberately
+# boring: camera/lens/chroma corrections only, no creative look.
+#
+# The resolver materializes a per-image base PP3 from this reference plus the
+# resolved camera/lens metadata (see agbr-rawtherapee::generate_base_pp3).
+# A creative recipe must never override these technical corrections.
+
+[Defringing]
+Enabled=true
+Radius=2.0
+Threshold=30

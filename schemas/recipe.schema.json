@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/hvlcrs/agbr/schemas/recipe.schema.json",
+  "title": "PhotoRecipe",
+  "description": "Canonical, editor-independent photo editing recipe. The LLM controls editing intent; RawTherapee controls image processing.",
+  "type": "object",
+  "required": ["version", "source", "global", "local", "constraints"],
+  "properties": {
+    "version": { "type": "string", "const": "1.0" },
+    "source": {
+      "type": "object",
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string" }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "properties": {
+        "vibe": { "type": "string" },
+        "intensity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "global": {
+      "type": "object",
+      "description": "Normalized global adjustments. contrast/highlights/shadows/saturation are in [-1,1]; exposure_ev is in EV.",
+      "properties": {
+        "exposure_ev": { "type": "number" },
+        "white_balance": {
+          "type": "object",
+          "required": ["temperature_k"],
+          "properties": {
+            "temperature_k": { "type": "number", "minimum": 1000, "maximum": 20000 },
+            "tint": { "type": "number", "minimum": -1, "maximum": 1 }
+          }
+        },
+        "contrast": { "type": "number", "minimum": -1, "maximum": 1 },
+        "highlights": { "type": "number", "minimum": -1, "maximum": 1 },
+        "shadows": { "type": "number", "minimum": -1, "maximum": 1 },
+        "saturation": { "type": "number", "minimum": -1, "maximum": 1 },
+        "tone_curve": {
+          "type": "object",
+          "required": ["points"],
+          "properties": {
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          }
+        },
+        "sharpening": {
+          "type": "object",
+          "required": ["amount"],
+          "properties": {
+            "amount": { "type": "number", "minimum": 0, "maximum": 1 },
+            "radius": { "type": "number", "minimum": 0, "maximum": 1 },
+            "threshold": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "noise_reduction": {
+          "type": "object",
+          "properties": {
+            "luminance": { "type": "number", "minimum": 0, "maximum": 1 },
+            "chroma": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "grain": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "local": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target", "operations"],
+        "properties": {
+          "target": { "$ref": "#/definitions/RegionSpec" },
+          "operations": { "type": "object" },
+          "feather": { "type": "number", "minimum": 0, "maximum": 1 },
+          "constraints": { "type": "object" }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "preserve_skin": { "type": "boolean" },
+        "no_crop": { "type": "boolean" },
+        "no_generation": { "type": "boolean" },
+        "preserve_original": { "type": "boolean" }
+      }
+    }
+  },
+  "definitions": {
+    "RegionSpec": {
+      "oneOf": [
+        { "$ref": "#/definitions/Rectangle" },
+        { "$ref": "#/definitions/Ellipse" },
+        { "$ref": "#/definitions/Polygon" },
+        { "$ref": "#/definitions/Gradient" },
+        { "$ref": "#/definitions/LumaRange" },
+        { "$ref": "#/definitions/ColorRange" },
+        { "$ref": "#/definitions/ExternalMask" },
+        { "$ref": "#/definitions/SemanticRegion" }
+      ]
+    },
+    "Rectangle": {
+      "type": "object",
+      "required": ["type", "x", "y", "w", "h"],
+      "properties": {
+        "type": { "const": "rectangle" },
+        "x": { "type": "number" }, "y": { "type": "number" },
+        "w": { "type": "number" }, "h": { "type": "number" }
+      }
+    },
+    "Ellipse": {
+      "type": "object",
+      "required": ["type", "cx", "cy", "rx", "ry"],
+      "properties": {
+        "type": { "const": "ellipse" },
+        "cx": { "type": "number" }, "cy": { "type": "number" },
+        "rx": { "type": "number" }, "ry": { "type": "number" }
+      }
+    },
+    "Polygon": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "polygon" },
+        "coordinates": {
+          "type": "array",
+          "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } }
+        }
+      }
+    },
+    "Gradient": {
+      "type": "object",
+      "required": ["type", "x1", "y1", "x2", "y2"],
+      "properties": {
+        "type": { "const": "gradient" },
+        "x1": { "type": "number" }, "y1": { "type": "number" },
+        "x2": { "type": "number" }, "y2": { "type": "number" }
+      }
+    },
+    "LumaRange": {
+      "type": "object",
+      "required": ["type", "low", "high"],
+      "properties": {
+        "type": { "const": "luma_range" },
+        "low": { "type": "number" }, "high": { "type": "number" },
+        "softness": { "type": "number" }
+      }
+    },
+    "ColorRange": {
+      "type": "object",
+      "required": ["type", "hue", "range"],
+      "properties": {
+        "type": { "const": "color_range" },
+        "hue": { "type": "number" }, "range": { "type": "number" }
+      }
+    },
+    "ExternalMask": {
+      "type": "object",
+      "required": ["type", "path"],
+      "properties": { "type": { "const": "external_mask" }, "path": { "type": "string" } }
+    },
+    "SemanticRegion": {
+      "type": "object",
+      "required": ["type", "label"],
+      "properties": { "type": { "const": "semantic_region" }, "label": { "type": "string" } }
+    }
+  }
+}
