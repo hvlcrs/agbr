@@ -10,6 +10,18 @@ members = [
     "crates/cli",
 ]
 
+# Workspace root package (umbrella). Required so release-please's rust
+# strategy can parse the root manifest — it rejects virtual workspaces.
+[package]
+name = "agbr-workspace"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/hvlcrs/agbr"
+authors = ["havelcyrus"]
+description = "Workspace root package for agbr. The agbr binary lives in crates/cli."
+publish = false
+
 [workspace.package]
 edition = "2021"
 license = "MIT"
