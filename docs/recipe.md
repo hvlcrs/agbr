@@ -55,8 +55,8 @@ Saved recipes also carry a `provenance` section (creation timestamp, producer) a
 
 - **intent** — the human/agent prompt and notes that produced the recipe (provenance).
 - **source** — the immutable input file (path recorded at creation time; hashes are recorded in the execution log at render time).
-- **global** — adjustments applied to the whole image (Phase 1 executes these).
-- **local** — region/subject-targeted operations (`semantic_region`, masks). Produced by the model, **validated and planned, but Phase 1 cannot execute them** — `plan` reports them as warnings; see GitHub issues for Phase 3 (local editing/masks).
+- **global** — adjustments applied to the whole image (currently executed).
+- **local** — region/subject-targeted operations (`semantic_region`, masks). Produced by the model, **validated and planned, but not yet executable** — `plan` reports them as warnings; tracked as a GitHub issue (local editing/masks).
 - **constraints** — optional hard constraints (schema-defined) on the recipe.
 
 ## Lifecycle

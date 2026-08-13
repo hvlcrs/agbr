@@ -28,7 +28,7 @@ Report the installed backend's runtime capabilities.
 agbr capabilities
 ```
 
-Output: the backend version, which global operations are supported, whether local masking is available (Phase 1: none), and whether profile layering/headless export work.
+Output: the backend version, which global operations are supported, whether local masking is available (currently none), and whether profile layering/headless export work.
 
 ### config
 
@@ -56,7 +56,7 @@ agbr recipe create ~/photos/IMG_001.ARW --mock \
 
 - Writes the validated recipe to `<workspace>/recipes/<stem>.json`.
 - `--mock` uses a deterministic offline provider — no API key needed.
-- Localized (subject/mask) operations are only *produced* here if the model chooses them; Phase 1 cannot execute them (see `plan`).
+- Localized (subject/mask) operations are only *produced* here if the model chooses them; they cannot be executed yet (see `plan`).
 
 ### recipe validate
 
