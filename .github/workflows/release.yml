@@ -1,110 +1,77 @@
-name: release
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 permissions:
   contents: write
-
-env:
-  CARGO_TERM_COLOR: always
+  pull-requests: write
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          release-type: rust
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Merge release PR
+        if: steps.release.outputs.pr
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          PR_NUMBER=$(echo '${{ steps.release.outputs.pr }}' | jq -r '.number')
+          gh pr merge --merge "$PR_NUMBER" --delete-branch
+          echo "Merged PR #$PR_NUMBER"
+
   build:
-    name: build ${{ matrix.target }}
+    needs: release
+    if: needs.release.outputs.tag_name != ''
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            suffix: ''
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            suffix: ''
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-          - os: macos-13
-            target: x86_64-apple-darwin
-          - os: macos-14
-            target: aarch64-apple-darwin
+            suffix: .exe
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ matrix.target }}
 
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "build-${{ matrix.target }}"
 
-      - name: Build release binary
-        run: cargo build --release --locked
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }} --locked
 
-      - name: Package
-        shell: bash
+      - name: Prepare assets
         run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          BIN="agbr"
-          if [ "$RUNNER_OS" = "Windows" ]; then BIN="agbr.exe"; fi
-          mkdir -p dist
-          cp "target/release/${BIN}" "dist/${BIN}"
-          tar -C dist -czf "dist/agbr-${VERSION}-${TARGET}.tar.gz" "${BIN}"
+          cp target/${{ matrix.target }}/release/agbr${{ matrix.suffix }} agbr-${{ matrix.target }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v3
         with:
-          name: agbr-${{ matrix.target }}
-          path: dist/*.tar.gz
-
-  universal-macos:
-    name: universal macOS binary
-    needs: build
-    runs-on: macos-14
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: agbr-x86_64-apple-darwin
-          path: intel
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: agbr-aarch64-apple-darwin
-          path: arm
-
-      - name: Combine with lipo
-        run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          mkdir -p dist
-          lipo -create intel/agbr arm/agbr -output dist/agbr
-          tar -C dist -czf dist/agbr-${VERSION}-universal-apple-darwin.tar.gz agbr
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: agbr-universal-apple-darwin
-          path: dist/*.tar.gz
-
-  release:
-    name: upload binaries to release
-    needs: [build, universal-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-
-      - name: List assets
-        run: ls -la dist
-
-      - name: Upload binaries
-        run: |
-          set -euo pipefail
-          # The release + changelog are created by release-please. Fall back to
-          # a bare release if it does not exist yet (race).
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
-            gh release create "$GITHUB_REF_NAME" --notes "See CHANGELOG.md"
-          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.release.outputs.tag_name }}
+          files: |
+            agbr-${{ matrix.target }}
