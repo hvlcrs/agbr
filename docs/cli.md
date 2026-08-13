@@ -2,6 +2,8 @@
 
 `agbr` is a terminal-native tool. Every operation is a subcommand that reads/writes JSON over stdio. The source RAW is never modified; all artifacts land in the workspace.
 
+> The exact `--help` output of every command lives in [commands.md](commands.md); this page covers behavior and workflows.
+
 ## Global behavior
 
 - All render commands return JSON with `output`, `output_hash` (sha256), `source_hash`, `backend_version`, and the exact `command` that was executed.
