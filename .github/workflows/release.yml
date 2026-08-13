@@ -86,7 +86,7 @@ jobs:
           path: dist/*.tar.gz
 
   release:
-    name: publish GitHub release
+    name: upload binaries to release
     needs: [build, universal-macos]
     runs-on: ubuntu-latest
     steps:
@@ -98,12 +98,13 @@ jobs:
       - name: List assets
         run: ls -la dist
 
-      - name: Create release
-        run: gh release create "$GITHUB_REF_NAME" --generate-notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload binaries
-        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+        run: |
+          set -euo pipefail
+          # The release + changelog are created by release-please. Fall back to
+          # a bare release if it does not exist yet (race).
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || \
+            gh release create "$GITHUB_REF_NAME" --notes "See CHANGELOG.md"
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

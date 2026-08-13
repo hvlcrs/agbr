@@ -1,26 +1,31 @@
 # Releasing
 
-Releases are fully automated by GitHub Actions. Push a `v*` tag and the [release workflow](../.github/workflows/release.yml) builds, packages, and publishes the binaries to the GitHub Release.
+Releases are automated end-to-end by GitHub Actions:
+
+- [release-please](https://github.com/googleapis/release-please-action) scans conventional commits on `main`, bumps the version, and opens a **release PR** with an auto-generated `CHANGELOG.md`.
+- Merging the release PR creates the version tag and the GitHub Release (with the changelog).
+- The [release workflow](../.github/workflows/release.yml) then builds, packages, and uploads the binaries to that Release.
+
+## How it works
+
+```
+conventional commit -> push to main
+  -> release-please opens "chore(main): release agbr vX.Y.Z" PR (CHANGELOG.md generated)
+  -> merge the release PR
+  -> tag vX.Y.Z + GitHub Release created (changelog attached)
+  -> release workflow builds binaries and uploads them as assets
+```
+
+- Version is read from `Cargo.toml` (`release-type: rust`) and bumped by release-please semantics (`feat:` -> minor, `fix:` -> patch, breaking -> major).
+- No manual tagging required — release-please creates the tag and release.
+- The binary build is triggered by the tag push and **uploads to the release that release-please already created** (with a bare fallback if the release doesn't exist yet).
 
 ## Cut a release
 
-```bash
-# Bump the version in Cargo.toml first, if needed.
-cargo build --release          # sanity check
-cargo test --locked            # CI does this too
-
-git add Cargo.toml Cargo.lock && git commit -m "release: v0.1.0"
-git push
-
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-The workflow then:
-
-1. Builds release binaries for **Linux x86_64**, **Windows x86_64**, **macOS Intel (x86_64)**, and **macOS Apple Silicon (arm64)**.
-2. Combines the two macOS binaries into a **universal** binary with `lipo`.
-3. Creates the GitHub Release (auto-generated notes) and uploads all packages as assets.
+1. Merge your changes to `main` using conventional commit messages (`feat:`, `fix:`, `docs:`, ...).
+2. Wait for the release-please action to open the release PR (a few minutes).
+3. Review the generated `CHANGELOG.md` and merge the release PR.
+4. The tag, GitHub Release, and binaries are produced automatically. Download them from the Releases page.
 
 ## Assets
 
