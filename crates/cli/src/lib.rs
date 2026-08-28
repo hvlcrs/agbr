@@ -3,6 +3,7 @@
 //! The [`engine::Engine`] is the deterministic photo-control engine; the CLI
 //! binary and the MCP server are thin interfaces over it.
 
+pub mod batch;
 pub mod config;
 pub mod engine;
 pub mod mcp;

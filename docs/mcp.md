@@ -34,6 +34,7 @@ All tools are thin wrappers over the engine; behavior matches the CLI equivalent
 | `photo.plan` | Plan a recipe against backend capabilities without executing. |
 | `photo.preview` | Render a downscaled preview of a recipe. |
 | `photo.apply` | Apply a recipe and render the full-resolution result. |
+| `photo.apply.batch` | Apply a recipe to multiple photos (files, directories, or glob patterns) and render them. |
 | `photo.export` | Export a photo with an explicit format and quality. |
 
 ## Typical agent flow

@@ -44,21 +44,30 @@ enum Commands {
 
     /// Render a downscaled preview.
     Preview {
-        photo: PathBuf,
+        /// One or more photos (files, directories, or glob patterns).
+        photos: Vec<PathBuf>,
         #[arg(long)]
         recipe: PathBuf,
+        /// Max concurrent renders.
+        #[arg(long, default_value_t = 1)]
+        jobs: usize,
     },
 
     /// Apply a recipe and render the full-resolution result.
     Apply {
-        photo: PathBuf,
+        /// One or more photos (files, directories, or glob patterns).
+        photos: Vec<PathBuf>,
         #[arg(long)]
         recipe: PathBuf,
+        /// Max concurrent renders.
+        #[arg(long, default_value_t = 1)]
+        jobs: usize,
     },
 
     /// Export with an explicit format/quality (optionally with a recipe).
     Export {
-        photo: PathBuf,
+        /// One or more photos (files, directories, or glob patterns).
+        photos: Vec<PathBuf>,
         /// Output format: jpg, tif, or png.
         #[arg(long, default_value = "jpg")]
         format: String,
@@ -68,6 +77,9 @@ enum Commands {
         /// Optional recipe to apply during export.
         #[arg(long)]
         recipe: Option<PathBuf>,
+        /// Max concurrent renders.
+        #[arg(long, default_value_t = 1)]
+        jobs: usize,
     },
 
     /// MCP interface.
@@ -81,7 +93,8 @@ enum Commands {
 enum RecipeCmd {
     /// Generate a PhotoRecipe from natural-language intent.
     Create {
-        photo: PathBuf,
+        /// One or more photos (files, directories, or glob patterns).
+        photos: Vec<PathBuf>,
         #[arg(long)]
         prompt: String,
         /// Use the deterministic mock provider (offline).
@@ -131,12 +144,17 @@ async fn run(cli: Cli, config: AppConfig) -> anyhow::Result<()> {
         }
         Commands::Recipe { cmd } => match cmd {
             RecipeCmd::Create {
-                photo,
+                photos,
                 prompt,
                 mock,
             } => {
                 let engine = Engine::new(config)?;
-                print_json(engine.recipe_create(&photo, &prompt, mock).await?);
+                let sources = agbr::batch::expand(&photos)?;
+                if sources.len() == 1 {
+                    print_json(engine.recipe_create(&sources[0], &prompt, mock).await?);
+                } else {
+                    print_json(engine.recipe_create_batch(&sources, &prompt, mock).await?);
+                }
             }
             RecipeCmd::Validate { recipe } => {
                 let engine = Engine::new(config)?;
@@ -147,23 +165,51 @@ async fn run(cli: Cli, config: AppConfig) -> anyhow::Result<()> {
             let engine = Engine::new(config)?;
             print_json(engine.plan(&recipe)?);
         }
-        Commands::Preview { photo, recipe } => {
+        Commands::Preview {
+            photos,
+            recipe,
+            jobs,
+        } => {
             let engine = Engine::new(config)?;
-            print_json(engine.preview(&photo, &recipe).await?);
+            let sources = agbr::batch::expand(&photos)?;
+            if sources.len() == 1 {
+                print_json(engine.preview(&sources[0], &recipe).await?);
+            } else {
+                print_json(engine.preview_batch(&sources, &recipe, jobs)?);
+            }
         }
-        Commands::Apply { photo, recipe } => {
+        Commands::Apply {
+            photos,
+            recipe,
+            jobs,
+        } => {
             let engine = Engine::new(config)?;
-            print_json(engine.apply(&photo, &recipe).await?);
+            let sources = agbr::batch::expand(&photos)?;
+            if sources.len() == 1 {
+                print_json(engine.apply(&sources[0], &recipe).await?);
+            } else {
+                print_json(engine.apply_batch(&sources, &recipe, jobs)?);
+            }
         }
         Commands::Export {
-            photo,
+            photos,
             format,
             quality,
             recipe,
+            jobs,
         } => {
             let engine = Engine::new(config)?;
             let format = parse_format(&format, quality);
-            print_json(engine.export(&photo, format, recipe.as_deref()).await?);
+            let sources = agbr::batch::expand(&photos)?;
+            if sources.len() == 1 {
+                print_json(
+                    engine
+                        .export(&sources[0], format, recipe.as_deref())
+                        .await?,
+                );
+            } else {
+                print_json(engine.export_batch(&sources, format, recipe.as_deref(), jobs)?);
+            }
         }
         Commands::Mcp { cmd } => match cmd {
             McpCmd::Serve => {
