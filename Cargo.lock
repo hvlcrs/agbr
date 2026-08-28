@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "agbr"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "agbr-core",
  "agbr-inspect",
@@ -27,7 +27,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hex",
  "serde",
@@ -38,7 +38,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-inspect"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "hex",
  "kamadak-exif",
@@ -50,7 +50,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-llm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "agbr-core",
  "reqwest",
@@ -62,7 +62,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-mcp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "agbr-core",
  "serde",
@@ -73,7 +73,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-planner"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "agbr-core",
  "serde",
@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-rawtherapee"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "agbr-core",
  "hex",
@@ -96,7 +96,7 @@ dependencies = [
 
 [[package]]
 name = "agbr-workspace"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "anstream"

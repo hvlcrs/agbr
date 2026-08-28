@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/hvlcrs/agbr/compare/v0.1.0...v0.2.0) (2026-08-28)
+
+
+### Features
+
+* batch image processing (multiple photos, one recipe) ([b052539](https://github.com/hvlcrs/agbr/commit/b052539c90431d8179ca28850f29c2e4f79ad9ea))
+* batch image processing (multiple photos, one recipe) ([c6adcb6](https://github.com/hvlcrs/agbr/commit/c6adcb607b8d8c4334eb91b38bce86b10ee06a60))
+
 ## 0.1.0 (2026-08-13)
 
 
