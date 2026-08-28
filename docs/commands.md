@@ -79,10 +79,10 @@ Options:
 ### recipe create
 
 ```
-Usage: agbr recipe create [OPTIONS] --prompt <PROMPT> <PHOTO>
+Usage: agbr recipe create [OPTIONS] --prompt <PROMPT> [PHOTOS]...
 
 Arguments:
-  <PHOTO>  
+  [PHOTOS]...  One or more photos (files, directories, or glob patterns)
 
 Options:
       --prompt <PROMPT>  
@@ -90,7 +90,7 @@ Options:
   -h, --help             Print help
 ```
 
-Sends the natural-language prompt (plus the photo's EXIF context) to the LLM and writes a validated `PhotoRecipe` to `<workspace>/recipes/<stem>.json`. `--mock` uses a deterministic offline provider (no API key).
+Sends the natural-language prompt (plus each photo's EXIF context) to the LLM and writes a validated `PhotoRecipe` to `<workspace>/recipes/<stem>.json` per photo. `--mock` uses a deterministic offline provider (no API key). Multiple photos (or a directory/glob) produce one recipe per photo with a shared prompt.
 
 ### recipe validate
 
@@ -121,49 +121,52 @@ Plans a recipe against backend capabilities without executing: supported steps, 
 ## preview
 
 ```
-Usage: agbr preview --recipe <RECIPE> <PHOTO>
+Usage: agbr preview [OPTIONS] --recipe <RECIPE> [PHOTOS]...
 
 Arguments:
-  <PHOTO>  
+  [PHOTOS]...  One or more photos (files, directories, or glob patterns)
 
 Options:
       --recipe <RECIPE>  
+      --jobs <JOBS>      Max concurrent renders [default: 1]
   -h, --help             Print help
 ```
 
-Renders a downscaled preview (long edge 1600px, JPEG q90) to `<workspace>/previews/<stem>-preview.jpg`.
+Renders a downscaled preview (long edge 1600px, JPEG q90) to `<workspace>/previews/<stem>-preview.jpg`. Multiple photos run in batch with `--jobs` concurrency.
 
 ## apply
 
 ```
-Usage: agbr apply --recipe <RECIPE> <PHOTO>
+Usage: agbr apply [OPTIONS] --recipe <RECIPE> [PHOTOS]...
 
 Arguments:
-  <PHOTO>  
+  [PHOTOS]...  One or more photos (files, directories, or glob patterns)
 
 Options:
       --recipe <RECIPE>  
+      --jobs <JOBS>      Max concurrent renders [default: 1]
   -h, --help             Print help
 ```
 
-Applies the recipe and renders the full-resolution result to `<workspace>/exports/<stem>.jpg` (JPEG q95).
+Applies the recipe and renders the full-resolution result to `<workspace>/exports/<stem>.jpg` (JPEG q95). Multiple photos run in batch with `--jobs` concurrency.
 
 ## export
 
 ```
-Usage: agbr export [OPTIONS] <PHOTO>
+Usage: agbr export [OPTIONS] [PHOTOS]...
 
 Arguments:
-  <PHOTO>  
+  [PHOTOS]...  One or more photos (files, directories, or glob patterns)
 
 Options:
       --format <FORMAT>    Output format: jpg, tif, or png [default: jpg]
       --quality <QUALITY>  JPEG quality (1-100)
       --recipe <RECIPE>    Optional recipe to apply during export
+      --jobs <JOBS>        Max concurrent renders [default: 1]
   -h, --help               Print help
 ```
 
-Exports with an explicit format/quality. Without a recipe, renders the neutral base profile only.
+Exports with an explicit format/quality. Without a recipe, renders the neutral base profile only. Multiple photos run in batch with `--jobs` concurrency.
 
 ## mcp
 

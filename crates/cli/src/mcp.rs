@@ -17,6 +17,7 @@ pub fn tools(engine: Arc<Engine>) -> Vec<Tool> {
     let e_plan = engine.clone();
     let e_preview = engine.clone();
     let e_apply = engine.clone();
+    let e_apply_batch = engine.clone();
     let e_export = engine.clone();
 
     vec![
@@ -118,6 +119,32 @@ pub fn tools(engine: Arc<Engine>) -> Vec<Tool> {
             },
         ),
         Tool::new(
+            "photo.apply.batch",
+            "Apply a recipe to multiple photos (files, directories, or glob patterns) and render them.",
+            object_schema(
+                &[("photos", "array"), ("recipe", "string")],
+                &[("jobs", "integer")],
+            ),
+            move |args| {
+                let e = e_apply_batch.clone();
+                async move {
+                    let photos = arg_str_array(&args, "photos")?
+                        .iter()
+                        .map(std::path::PathBuf::from)
+                        .collect::<Vec<_>>();
+                    let sources = crate::batch::expand(&photos).map_err(|e| e.to_string())?;
+                    let recipe = arg_str(&args, "recipe")?;
+                    let jobs = args
+                        .get("jobs")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(1)
+                        .clamp(1, 64) as usize;
+                    e.apply_batch(&sources, std::path::Path::new(&recipe), jobs)
+                        .map_err(|e| e.to_string())
+                }
+            },
+        ),
+        Tool::new(
             "photo.export",
             "Export a photo with an explicit format and quality.",
             object_schema(
@@ -187,4 +214,17 @@ fn arg_str(args: &Value, name: &str) -> Result<String, String> {
         .and_then(Value::as_str)
         .map(|s| s.to_string())
         .ok_or_else(|| format!("missing required argument '{name}'"))
+}
+
+fn arg_str_array(args: &Value, name: &str) -> Result<Vec<String>, String> {
+    args.get(name)
+        .and_then(Value::as_array)
+        .map(|arr| {
+            arr.iter()
+                .filter_map(Value::as_str)
+                .map(|s| s.to_string())
+                .collect()
+        })
+        .filter(|v: &Vec<String>| !v.is_empty())
+        .ok_or_else(|| format!("missing or empty required argument '{name}'"))
 }

@@ -121,6 +121,35 @@ Start the MCP server over stdio (see [mcp.md](mcp.md)).
 agbr mcp serve
 ```
 
+## Batch processing
+
+`preview`, `apply`, `export`, and `recipe create` accept **multiple photos**. Each argument may be:
+
+- a concrete file
+- a directory (scanned recursively for supported image files)
+- a glob pattern (e.g. `~/shoot/**/*.ARW`; a leading `~/` is expanded)
+
+When more than one photo resolves, the command processes all of them and prints a summary:
+
+```bash
+agbr apply '~/shoot/**/*.ARW' --recipe ~/agbr/recipes/look.json --jobs 4
+```
+
+```json
+{
+  "processed": 120,
+  "succeeded": 118,
+  "failed": 2,
+  "jobs": 4,
+  "results": [ { "source": "...", "output": "...", ... }, ... ]
+}
+```
+
+- `--jobs N` bounds concurrency (default `1`); RawTherapee is CPU-heavy, so tune to your core count.
+- A single resolved photo keeps the original single-object output shape (backward compatible).
+- `recipe create` in batch mode generates one recipe per photo from the shared prompt, using each photo's own EXIF context.
+- The source RAW is never modified; per-photo outputs keep the existing `<stem>.<ext>` naming and every render is recorded in `logs/execution.jsonl`.
+
 ## Typical workflow
 
 ```bash

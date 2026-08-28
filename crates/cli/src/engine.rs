@@ -1,6 +1,7 @@
 //! The photo-control engine. CLI and MCP both invoke these functions.
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::{json, Value};
@@ -15,6 +16,7 @@ use agbr_rawtherapee::{
     generate_base_pp3, generate_look_pp3, rawtherapee_capabilities, BaseProfileInput, Pp3,
 };
 
+use crate::batch;
 use crate::config::AppConfig;
 use crate::prompts;
 use crate::workspace::Workspace;
@@ -180,15 +182,13 @@ impl Engine {
             .previews_dir()
             .join(format!("{stem}-preview.jpg"));
 
-        let result = self
-            .render(
-                &canonical,
-                Some(&recipe),
-                &out_file,
-                OutputFormat::Jpeg { quality: 90 },
-                Some(DEFAULT_PREVIEW_LONG_EDGE),
-            )
-            .await?;
+        let result = self.render(
+            &canonical,
+            Some(&recipe),
+            &out_file,
+            OutputFormat::Jpeg { quality: 90 },
+            Some(DEFAULT_PREVIEW_LONG_EDGE),
+        )?;
 
         Ok(serde_json::to_value(result)?)
     }
@@ -200,15 +200,13 @@ impl Engine {
         let stem = Workspace::stem_for(&canonical);
         let out_file = self.workspace.export_dir().join(format!("{stem}.jpg"));
 
-        let result = self
-            .render(
-                &canonical,
-                Some(&recipe),
-                &out_file,
-                OutputFormat::Jpeg { quality: 95 },
-                None,
-            )
-            .await?;
+        let result = self.render(
+            &canonical,
+            Some(&recipe),
+            &out_file,
+            OutputFormat::Jpeg { quality: 95 },
+            None,
+        )?;
 
         Ok(serde_json::to_value(result)?)
     }
@@ -230,16 +228,125 @@ impl Engine {
             None => None,
         };
 
-        let result = self
-            .render(&canonical, recipe.as_ref(), &out_file, format, None)
-            .await?;
+        let result = self.render(&canonical, recipe.as_ref(), &out_file, format, None)?;
 
         Ok(serde_json::to_value(result)?)
     }
 
+    /// `apply --batch` — render a set of photos with one shared recipe.
+    pub fn apply_batch(
+        &self,
+        sources: &[PathBuf],
+        recipe_path: &Path,
+        jobs: usize,
+    ) -> Result<Value> {
+        let recipe = Arc::new(load_recipe(recipe_path)?);
+        self.render_batch(
+            sources,
+            Some(recipe),
+            OutputFormat::Jpeg { quality: 95 },
+            None,
+            jobs,
+            &|stem| self.workspace.export_dir().join(format!("{stem}.jpg")),
+        )
+    }
+
+    /// `preview --batch` — render downscaled previews for a set of photos.
+    pub fn preview_batch(
+        &self,
+        sources: &[PathBuf],
+        recipe_path: &Path,
+        jobs: usize,
+    ) -> Result<Value> {
+        let recipe = Arc::new(load_recipe(recipe_path)?);
+        self.render_batch(
+            sources,
+            Some(recipe),
+            OutputFormat::Jpeg { quality: 90 },
+            Some(DEFAULT_PREVIEW_LONG_EDGE),
+            jobs,
+            &|stem| {
+                self.workspace
+                    .previews_dir()
+                    .join(format!("{stem}-preview.jpg"))
+            },
+        )
+    }
+
+    /// `export --batch` — export a set of photos with an explicit format.
+    pub fn export_batch(
+        &self,
+        sources: &[PathBuf],
+        format: OutputFormat,
+        recipe_path: Option<&Path>,
+        jobs: usize,
+    ) -> Result<Value> {
+        let recipe = match recipe_path {
+            Some(p) => Some(Arc::new(load_recipe(p)?)),
+            None => None,
+        };
+        let ext = format.extension();
+        self.render_batch(sources, recipe, format, None, jobs, &|stem| {
+            self.workspace.export_dir().join(format!("{stem}.{ext}"))
+        })
+    }
+
+    /// `recipe create --batch` — generate a recipe per photo (shared prompt).
+    pub async fn recipe_create_batch(
+        &self,
+        sources: &[PathBuf],
+        prompt: &str,
+        use_mock: bool,
+    ) -> Result<Value> {
+        let mut inputs = Vec::with_capacity(sources.len());
+        let mut results = Vec::with_capacity(sources.len());
+        for src in sources {
+            let canonical = canonicalize_source(src)?;
+            let stem = Workspace::stem_for(&canonical);
+            inputs.push((canonical.display().to_string(), stem));
+            results.push(self.recipe_create(src, prompt, use_mock).await);
+        }
+        Ok(batch::summarize(&inputs, results, 1))
+    }
+
     // --- Internals ---------------------------------------------------------
 
-    async fn render(
+    fn render_batch(
+        &self,
+        sources: &[PathBuf],
+        recipe: Option<Arc<PhotoRecipe>>,
+        format: OutputFormat,
+        resize_long_edge: Option<u32>,
+        jobs: usize,
+        out_for: &dyn Fn(&str) -> PathBuf,
+    ) -> Result<Value> {
+        let mut canonicals = Vec::with_capacity(sources.len());
+        let mut out_files = Vec::with_capacity(sources.len());
+        let mut inputs = Vec::with_capacity(sources.len());
+
+        for src in sources {
+            let canonical = canonicalize_source(src)?;
+            let stem = Workspace::stem_for(&canonical);
+            out_files.push(out_for(&stem));
+            inputs.push((canonical.display().to_string(), stem));
+            canonicals.push(canonical);
+        }
+
+        let recipe_ref = recipe.as_deref();
+        let results = batch::map_concurrent(canonicals.len(), jobs, |i| {
+            self.render(
+                &canonicals[i],
+                recipe_ref,
+                &out_files[i],
+                format,
+                resize_long_edge,
+            )
+        });
+
+        Ok(batch::summarize(&inputs, results, jobs))
+    }
+
+    fn render(
         &self,
         source: &Path,
         recipe: Option<&PhotoRecipe>,
